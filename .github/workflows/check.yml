@@ -2,7 +2,7 @@ name: Check Bekiuz AI
 
 on:
   push:
-    branches: [main]
+    branches: [main, zuxrash-ai]
   pull_request:
     branches: [main]
   workflow_dispatch:
