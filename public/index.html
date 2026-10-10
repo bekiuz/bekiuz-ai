@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0910">
+  <meta name="description" content="Bekiuz AI — universal AI yordamchi va bizneslarni avtomatlashtirish vositasi.">
+  <title>Bekiuz AI — Think. Create. Automate.</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Suhbatlar paneli">
+      <a class="brand" href="#" aria-label="Bekiuz AI bosh sahifa">
+        <span class="brand-mark">B<span>AI</span></span>
+        <span class="brand-text"><strong>BEKIUZ <em>AI</em></strong><small>THINK · CREATE · AUTOMATE</small></span>
+      </a>
+      <button id="newChatBtn" class="new-chat-btn" type="button"><span class="plus">＋</span> Yangi suhbat</button>
+      <div class="sidebar-label">SO‘NGGI SUHBATLAR</div>
+      <div id="chatList" class="chat-list" aria-live="polite"></div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-status"><span class="status-dot" id="statusDot"></span><span id="statusText">AI xizmatini tekshiryapti…</span></div>
+        <div class="profile-row"><div class="profile-avatar">B</div><div class="profile-name"><strong>Bekiuz AI</strong><small>Beta · Bepul model</small></div><span class="beta-tag">BETA</span></div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-menu" id="mobileMenuBtn" type="button" aria-label="Yon panelni ochish" aria-expanded="false">☰</button>
+          <div class="mobile-brand"><span class="mini-mark">B</span><strong>BEKIUZ <em>AI</em></strong></div>
+          <div class="mode-switch" role="group" aria-label="AI rejimini tanlash">
+            <button class="mode-btn active" data-mode="general" type="button" aria-pressed="true"><span>✳</span> Universal AI</button>
+            <button class="mode-btn" data-mode="business" type="button" aria-pressed="false"><span>▦</span> Business AI</button>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="secure-label"><span>●</span> Server orqali himoyalangan kalit</span>
+          <button id="clearChatBtn" class="icon-btn" type="button" title="Joriy suhbatni tozalash" aria-label="Joriy suhbatni tozalash">⌫</button>
+        </div>
+      </header>
+
+      <section class="chat-area" id="chatArea" aria-label="AI suhbat maydoni">
+        <div id="welcome" class="welcome-screen">
+          <div class="welcome-orb"><span class="orb-core">B<span>AI</span></span><i class="orb-ring ring-one"></i><i class="orb-ring ring-two"></i><i class="orb-dot dot-one"></i><i class="orb-dot dot-two"></i></div>
+          <div class="welcome-kicker"><span class="status-dot"></span> SIZNING AI ISH MUHITINGIZ</div>
+          <h1 id="welcomeTitle">Fikringizni <span>amalga oshiring.</span></h1>
+          <p id="welcomeText">Savol bering, g‘oya yarating yoki murakkab vazifani birgalikda hal qilaylik.</p>
+          <div class="suggestion-grid" id="suggestionGrid">
+            <button class="suggestion" data-prompt="Menga yangi loyiha uchun 5 ta original g‘oya taklif qil. Har birining auditoriyasi va foydasini qisqacha tushuntir." type="button"><span class="suggestion-icon violet">✧</span><span><strong>G‘oya topish</strong><small>Yangi loyiha uchun g‘oyalar</small></span><b>↗</b></button>
+            <button class="suggestion" data-prompt="Quyidagi matnni professional, ravon o‘zbek tilida qayta yozish uchun menga savol ber: " type="button"><span class="suggestion-icon pink">✎</span><span><strong>Matn yozish</strong><small>Post, xat yoki tavsif</small></span><b>↗</b></button>
+            <button class="suggestion business-only" data-prompt="Kichik biznes uchun mijozlar ko‘p so‘raydigan savollardan namunaviy FAQ tuz. Javoblar qisqa, muloyim va aniq bo‘lsin." type="button"><span class="suggestion-icon blue">▦</span><span><strong>Mijozlar savollari</strong><small>Business AI uchun FAQ</small></span><b>↗</b></button>
+            <button class="suggestion" data-prompt="Men yangi dasturlash loyihasini boshlayapman. Talablar, texnologiyalar va birinchi 5 ta qadamni aniqlashga yordam ber." type="button"><span class="suggestion-icon green">⌘</span><span><strong>Kod va reja</strong><small>Loyihani bosqichlarga ajratish</small></span><b>↗</b></button>
+          </div>
+        </div>
+        <div id="messages" class="messages" aria-live="polite" aria-relevant="additions text"></div>
+      </section>
+
+      <footer class="composer-wrap">
+        <form id="chatForm" class="composer">
+          <textarea id="messageInput" rows="1" maxlength="12000" placeholder="Bekiuz AI’dan biror narsa so‘rang…" aria-label="Xabaringiz" required></textarea>
+          <div class="composer-bottom"><div class="composer-note"><span class="sparkle">✧</span><span id="composerHint">Universal AI · Fikrlash, yozish va kod</span></div><div class="composer-controls"><span class="char-count" id="charCount">0 / 12000</span><button class="send-btn" id="sendBtn" type="submit" aria-label="Xabarni yuborish"><span>Yuborish</span><b>↑</b></button></div></div>
+        </form>
+        <div class="fine-print">Bekiuz AI xato qilishi mumkin. Muhim ma’lumotlarni tekshiring. Suhbatlar hozircha ushbu brauzerda saqlanadi.</div>
+      </footer>
+    </main>
+  </div>
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
