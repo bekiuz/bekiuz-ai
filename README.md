@@ -1,47 +1,48 @@
 # Bekiuz AI — Universal + Business AI
 
-Bekiuz Company uchun mobilga mos AI MVP. Bitta ilovada ikki rejim mavjud:
+Bekiuz Company uchun mobilga mos AI chat MVP.
 
 - **Universal AI** — umumiy savollar, yozish, rejalash va kod bo‘yicha yordam.
 - **Business AI** — marketing matni, ijtimoiy tarmoq kontenti, FAQ, mahsulot tavsifi va biznes jarayonlarini rejalash.
 
-Frontend: HTML/CSS/JavaScript. Backend: Cloudflare Worker. AI: OpenRouter Free Models Router (`openrouter/free`). Build bosqichi talab qilinmaydi.
+Frontend: HTML/CSS/JavaScript. Backend: Cloudflare Workers. Model API: Hugging Face Inference Providers. Yangi Hugging Face Space shart emas — mavjud Cloudflare Worker sayt va backendni birga xizmat qiladi.
 
-## Mahalliy ishga tushirish
+## Bir marta sozlash
 
-Talablar: Node.js LTS va npm.
+1. Hugging Face tokenlarini yaratish sahifasini oching: https://huggingface.co/settings/tokens
+2. Fine-grained token yarating va **Make calls to Inference Providers** ruxsatini tanlang.
+3. Cloudflare Dashboard → **Workers & Pages** → **bekiuz-ai** → **Settings** → **Variables and Secrets** → **Add**.
+4. Type: **Secret**, name: `HF_TOKEN`, value: tokeningiz.
+5. **Deploy** tugmasini bosing.
+6. Saytni ochib `/api/health` endpointini tekshiring. `configured: true` bo‘lsa, token serverga ulangan.
 
-1. Repozitoriyani yuklab, terminalni loyiha papkasida oching.
-2. Paketlarni o‘rnating: `npm install`
-3. OpenRouter API key yarating: https://openrouter.ai/keys
-4. `.dev.vars.example` faylidan `.dev.vars` nusxa yarating va `OPENROUTER_API_KEY` qiymatini o‘zingizning kalitingiz bilan almashtiring. Bu fayl Git’ga yuborilmasligi kerak.
-5. `npm run dev` buyrug‘ini bajaring.
-6. Terminal ko‘rsatgan localhost manzilini oching.
+Tokenni hech qachon GitHub, frontend JavaScript yoki chatga yozmang.
 
-## Cloudflare Workers'ga chiqarish
+## Model va kvota
 
-1. Cloudflare hisobingizga kiring.
-2. Terminalda autentifikatsiya qiling: `npx wrangler login`
-3. API kalitini maxfiy secret sifatida qo‘shing: `npx wrangler secret put OPENROUTER_API_KEY`
-4. So‘ralganda kalitni terminalga kiriting. Uni frontend, `wrangler.toml` yoki GitHub'ga yozmang.
-5. Deploy qiling: `npm run deploy`
-6. `/api/health` endpointini tekshiring.
+Standart model: `google/gemma-2-2b-it:fastest`. Uni `wrangler.toml` faylidagi `HF_MODEL` orqali almashtirish mumkin.
 
-## Bepul AI va cheklovlar
+Hugging Face Free foydalanuvchilar uchun hozir oyiga **$0.10 Inference Providers krediti** beradi; bu miqdor o‘zgarishi mumkin va cheksiz foydalanish emas. Kvota tugasa, ilova foydalanuvchiga xabar beradi. Model mavjudligi va provayder limiti ham o‘zgarishi mumkin.
 
-Standart model `openrouter/free`. U mos bepul modelni tanlaydi. Bepul model mavjudligi, javob tezligi va limitlari o‘zgarishi mumkin. Bu cheksiz foydalanish kafolati emas.
+- Hugging Face Inference Providers: https://huggingface.co/docs/inference-providers/tasks/chat-completion
+- Tariflar: https://huggingface.co/docs/inference-providers/pricing
+- Cloudflare Worker Secrets: https://developers.cloudflare.com/workers/configuration/secrets/
 
-- OpenRouter Free Router: https://openrouter.ai/docs/guides/routing/routers/free-router
-- Cloudflare static assets: https://developers.cloudflare.com/workers/static-assets/
-- Cloudflare Workers secrets: https://developers.cloudflare.com/workers/configuration/secrets/
+## Mahalliy test
 
-## Maxfiylik va hozirgi cheklovlar
+1. `.dev.vars.example` faylidan `.dev.vars` nusxa yarating.
+2. `HF_TOKEN` qiymatini mahalliy server uchun kiriting.
+3. `npm install`
+4. `npm run dev`
 
-- API kaliti faqat serverdagi secretda saqlanishi kerak.
-- Suhbatlar foydalanuvchining brauzeridagi `localStorage`'da saqlanadi; bulutli tarix va akkauntlar hozircha yo‘q.
-- Xabarlar javob olish uchun OpenRouter'ga yuboriladi; sezgir ma'lumot yubormang.
-- Hozircha autentifikatsiya va individual server-side limitlar yo‘q. Ommaga keng chiqarishdan oldin bularni qo‘shish kerak.
-- Bepul router tanlagan modelga qarab javob sifati va uslubi farqlanishi mumkin.
+Maxfiy `.dev.vars` GitHub'ga yuborilmasligi kerak.
+
+## Hozirgi cheklovlar
+
+- Suhbatlar hozircha brauzerning `localStorage` xotirasida saqlanadi; akkaunt va bulutli sinxronlash yo‘q.
+- Veb-qidiruv, rasm tahlili va ovoz funksiyalari hali qo‘shilmagan.
+- Xabarlar AI javobini ishlab chiqarish uchun Hugging Face Inference Providers orqali yuboriladi. Parol yoki maxfiy ma'lumot yubormang.
+- Ommaga keng chiqarishdan oldin autentifikatsiya va so‘rovlar uchun server-side limit qo‘shish ma’qul.
 
 ## Fayllar
 
