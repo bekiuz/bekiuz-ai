@@ -10,7 +10,9 @@ Frontend: HTML/CSS/JavaScript. Backend va inference: Cloudflare Workers AI. Hugg
 
 ## Deployment
 
-Cloudflare Worker hozircha `bekiuz-ai.bekiuz282.workers.dev` manzilida joylashgan, lekin sayt brendi Zuxrash AI. GitHub `main` branch yangilanganda Cloudflare Build sozlangan bo‘lsa, `npx wrangler deploy` bajariladi.
+Zuxrash AI mavjud Bekiuz AI loyihasidan alohida Cloudflare Worker sifatida deploy qilinishi kerak. Bu kod `zuxrash-ai` GitHub branchida turadi; mavjud `main` branchdagi Bekiuz AI’ni o‘zgartirmaydi.
+
+Cloudflare Dashboard → Workers & Pages → Create → Connect to Git. Repository: `bekiuz/bekiuz-ai`, production branch: `zuxrash-ai`, deploy command: `npx wrangler deploy`. `wrangler.toml` ichidagi Worker nomi `zuxrash-ai` bo‘lib, odatda alohida `zuxrash-ai.<account-subdomain>.workers.dev` manzili beriladi.
 
 ## Public endpoint himoyasi
 
