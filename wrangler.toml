@@ -1,4 +1,4 @@
-name = "bekiuz-ai"
+name = "zuxrash-ai"
 main = "src/index.js"
 compatibility_date = "2026-10-10"
 
@@ -13,10 +13,10 @@ binding = "AI"
 [vars]
 AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
 
-# Basic protection for the public AI endpoint.
+# Public Zuxrash AI endpoint protections.
 [[ratelimits]]
 name = "CLIENT_RATE_LIMITER"
-namespace_id = "2026101001"
+namespace_id = "2026101003"
 
   [ratelimits.simple]
   limit = 10
@@ -24,7 +24,7 @@ namespace_id = "2026101001"
 
 [[ratelimits]]
 name = "NETWORK_RATE_LIMITER"
-namespace_id = "2026101002"
+namespace_id = "2026101004"
 
   [ratelimits.simple]
   limit = 60
