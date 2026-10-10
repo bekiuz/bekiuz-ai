@@ -1,6 +1,6 @@
-const GENERAL_SYSTEM_PROMPT = "You are Zuxrash AI, a helpful multilingual AI assistant available to the public. Reply in the language used by the user; prefer natural Uzbek when they write Uzbek. Be accurate, clear, respectful, and practical. If unsure, say so instead of inventing facts. For coding requests, provide working code and concise explanations. Ask a clarifying question only when necessary. Do not claim you browsed the web or performed real-world actions unless tools actually did so.";
+const GENERAL_SYSTEM_PROMPT = "You are Bekiuz AI, a helpful multilingual AI assistant created by Bekiuz Company. Reply in the language used by the user; prefer natural Uzbek when they write Uzbek. Be accurate, clear, respectful, and practical. If unsure, say so instead of inventing facts. For coding requests, provide working code and concise explanations. Ask a clarifying question only when necessary. Do not claim you browsed the web or performed real-world actions unless tools actually did so.";
 
-const BUSINESS_SYSTEM_PROMPT = "You are Zuxrash AI in Business AI mode, an assistant for small businesses, designers, freelancers, and teams. Reply in the user's language; prefer natural Uzbek for Uzbek messages. Help create social media captions, ad copy, product descriptions, customer support replies, FAQ drafts, content calendars, project proposals, and simple workflow plans. Never invent business prices, guarantees, testimonials, or facts. If key details are missing, state assumptions or ask one concise question. Keep marketing claims honest and avoid promising guaranteed sales or results.";
+const BUSINESS_SYSTEM_PROMPT = "You are Bekiuz Business AI, an assistant for small businesses, designers, freelancers, and teams. Reply in the user's language; prefer natural Uzbek for Uzbek messages. Help create social media captions, ad copy, product descriptions, customer support replies, FAQ drafts, content calendars, project proposals, and simple workflow plans. Never invent business prices, guarantees, testimonials, or facts. If key details are missing, state assumptions or ask one concise question. Keep marketing claims honest and avoid promising guaranteed sales or results.";
 
 const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
@@ -47,7 +47,6 @@ export default {
         provider: "Cloudflare Workers AI",
         model: env.AI_MODEL || DEFAULT_MODEL,
         freeDailyAllocationNeurons: 10000,
-        rateLimitProtection: Boolean(env.CLIENT_RATE_LIMITER && env.NETWORK_RATE_LIMITER),
       });
     }
 
@@ -62,35 +61,6 @@ export default {
         ok: false,
         error: "Cloudflare Workers AI binding ulanmagan.",
         code: "AI_BINDING_NOT_CONFIGURED",
-      }, 503);
-    }
-
-    // Public endpoint protections: one browser identifier and one network-level limit.
-    // Cloudflare's rate-limit counters are approximate and local to each Cloudflare location.
-    const clientIp = request.headers.get("cf-connecting-ip") || "unknown-ip";
-    const clientHeader = request.headers.get("x-zuxrash-client") || "anonymous";
-    const safeClientId = /^[a-zA-Z0-9_-]{16,80}$/.test(clientHeader) ? clientHeader : "anonymous";
-    try {
-      const [clientLimit, networkLimit] = await Promise.all([
-        env.CLIENT_RATE_LIMITER
-          ? env.CLIENT_RATE_LIMITER.limit({ key: `${clientIp}:${safeClientId}` })
-          : { success: true },
-        env.NETWORK_RATE_LIMITER
-          ? env.NETWORK_RATE_LIMITER.limit({ key: clientIp })
-          : { success: true },
-      ]);
-      if (!clientLimit.success || !networkLimit.success) {
-        return json({
-          ok: false,
-          error: "Juda ko‘p so‘rov yuborildi. Bir daqiqadan keyin qayta urinib ko‘ring.",
-          code: "RATE_LIMITED",
-        }, 429);
-      }
-    } catch {
-      return json({
-        ok: false,
-        error: "So‘rovlar himoyasini tekshirishda vaqtinchalik xatolik. Keyinroq urinib ko‘ring.",
-        code: "RATE_LIMIT_UNAVAILABLE",
       }, 503);
     }
 
