@@ -1,49 +1,56 @@
-# Zuxrash AI — Universal AI + Business AI
+# Bekiuz AI — Universal + Business AI
 
-Zuxrash AI — ochiq havola orqali hamma foydalanishi mumkin bo‘lgan, o‘zbek tilini afzal ko‘radigan AI chat prototipi.
+Bekiuz Company uchun mobilga mos AI chat MVP.
 
 - **Universal AI** — umumiy savollar, yozish, rejalash va kod bo‘yicha yordam.
 - **Business AI** — marketing matni, ijtimoiy tarmoq kontenti, FAQ, mahsulot tavsifi va biznes jarayonlarini rejalash.
-- **Public web app** — login talab qilmaydi; suhbatlar hozircha har bir foydalanuvchining brauzerida saqlanadi.
 
-Frontend: HTML/CSS/JavaScript. Backend va inference: Cloudflare Workers AI. Hugging Face yoki OpenRouter API tokeni kerak emas.
+Frontend: HTML/CSS/JavaScript. Backend va model inference: Cloudflare Workers AI. Alohida Hugging Face yoki OpenRouter API tokeni kerak emas.
 
-## Deployment
+## Cloudflare sozlamasi
 
-Cloudflare Worker hozircha `bekiuz-ai.bekiuz282.workers.dev` manzilida joylashgan, lekin sayt brendi Zuxrash AI. GitHub `main` branch yangilanganda Cloudflare Build sozlangan bo‘lsa, `npx wrangler deploy` bajariladi.
+Worker Wrangler binding sozlamasinda Workers AI quyidagicha ulangan:
 
-## Public endpoint himoyasi
+```toml
+[ai]
+binding = "AI"
 
-- Brauzer identifikatori uchun daqiqasiga 10 so‘rov.
-- Bir tarmoq/IP uchun daqiqasiga 60 so‘rov.
-- So‘rov matnlari va chat tarixiga o‘lcham cheklovi.
-- Cheklovlar Cloudflare’ning per-location, eventual-consistency rate limiteridan foydalanadi; bu mukammal global hisoblagich yoki autentifikatsiya emas. Ko‘p odam bir xil tarmoqda bo‘lsa, umumiy tarmoq limiti ularga ta’sir qilishi mumkin.
+[vars]
+AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+```
 
-- Rate limiting docs: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+GitHub’dagi `main` branch yangilanganda Cloudflare Build sozlangan bo‘lsa, `npx wrangler deploy` avtomatik bajariladi. Build tugagach, `/api/health` endpointini oching. `configured: true` va `provider: "Cloudflare Workers AI"` chiqishi kerak.
+
+- Workers AI bindings: https://developers.cloudflare.com/workers-ai/configuration/bindings/
+- Model ma’lumoti va misol: https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/
+- Tarif va bepul limit: https://developers.cloudflare.com/workers-ai/platform/pricing/
 
 ## Bepul limit
 
-Cloudflare Workers AI bepul rejasi kuniga **10,000 Neuron** beradi; limit UTC 00:00 da yangilanadi. Bu cheksiz foydalanish emas. Kunlik kvota to‘lsa, suhbatlar vaqtincha javob bermasligi mumkin.
+Cloudflare Workers AI bepul rejasi kuniga **10,000 Neuron** ajratadi. Limit **00:00 UTC** da yangilanadi. Bu cheksiz foydalanish emas; kunlik limit tugasa, so‘rovlar keyingi resetgacha ishlamasligi mumkin.
 
-- Workers AI pricing: https://developers.cloudflare.com/workers-ai/platform/pricing/
-- Workers AI model: https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/
+## Mahalliy ishga tushirish
 
-## Privacy
+1. Node.js LTS va npm o‘rnating.
+2. Repozitoriyani yuklab oling va terminalni loyiha papkasida oching.
+3. `npm install`
+4. `npx wrangler login`
+5. `npm run dev`
 
-- Chat tarixi foydalanuvchining brauzeridagi `localStorage`da qoladi; serverda foydalanuvchi akkaunti yoki cloud chat history yo‘q.
-- Xabarlar model javobi uchun Cloudflare Workers AI’ga yuboriladi.
-- Anti-abuse rate limiting uchun Cloudflare kiruvchi so‘rovning IP manzili va brauzer identifikatoridan foydalanadi. Dastur IP manzilini chat tarixiga saqlamaydi.
-- Parol, API kaliti va boshqa maxfiy ma’lumotlarni chatga yozmang.
+Workers AI mahalliy `wrangler dev` testlarida ham Cloudflare hisobingiz orqali ishlaydi.
 
-## Current limitations
+## Maxfiylik va cheklovlar
 
-- Web search, file upload, image understanding, voice, account login, cross-device sync, and payment tiers are not implemented yet.
-- Keng ommaga e’lon qilishdan oldin foydalanish shartlari, maxfiylik sahifasi va kuchliroq abuse controls qo‘shilishi tavsiya etiladi.
+- AI API tokenini frontendga yoki GitHub’ga qo‘yish talab qilinmaydi.
+- Suhbatlar brauzerning `localStorage` xotirasida saqlanadi; bulutli tarix va akkauntlar yo‘q.
+- Xabarlar javob ishlab chiqarish uchun Cloudflare Workers AI’ga uzatiladi; parol yoki boshqa maxfiy ma’lumot yubormang.
+- Veb-qidiruv, rasm tahlili va ovoz funksiyalari hali qo‘shilmagan.
+- Ommaga keng chiqarishdan oldin autentifikatsiya va server-side request limitlari qo‘shilishi tavsiya etiladi.
 
-## Files
+## Fayllar
 
-- `public/index.html` — interface
-- `public/styles.css` — responsive design
-- `public/app.js` — chat, history, per-browser identifier
+- `public/index.html` — interfeys
+- `public/styles.css` — responsive dizayn
+- `public/app.js` — chat, tarix va API chaqiruvi
 - `src/index.js` — Cloudflare Worker backend
-- `wrangler.toml` — Workers AI + rate limiting bindings
+- `wrangler.toml` — Workers AI binding va deployment sozlamalari
