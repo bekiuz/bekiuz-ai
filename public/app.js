@@ -44,8 +44,8 @@
       const response = await fetch("/api/health", { headers: { Accept: "application/json" } });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error("Health check failed");
-      setStatus(true, data.configured ? "AI xizmati tayyor" : "API kaliti sozlanmagan");
-      if (!data.configured) toast("AI ishlashi uchun serverga OPENROUTER_API_KEY secretini qo‘shish kerak.");
+      setStatus(true, data.configured ? "AI xizmati tayyor" : "HF_TOKEN sozlanmagan");
+      if (!data.configured) toast("AI tokenini Cloudflare Worker Settings → Variables and Secrets ichida HF_TOKEN nomi bilan Secret qilib qo‘shish kerak.");
     } catch { setStatus(false, "AI serveriga ulanilmadi"); }
   }
   function setMode(mode, repaint = true) {
@@ -286,8 +286,12 @@
     } catch (error) {
       const position = chat.messages.findIndex((message) => message.id === pending.id);
       let errorText = "Ulanishda xatolik bo‘ldi. Server sozlamalarini tekshiring.";
-      if (error.code === "API_NOT_CONFIGURED") errorText = "AI hali sozlanmagan. Serverga OPENROUTER_API_KEY secretini qo‘shish kerak.";
-      else if (error.code === "RATE_LIMITED") errorText = "Bepul AI limiti vaqtincha to‘ldi. Keyinroq urinib ko‘ring.";
+      if (error.code === "HF_TOKEN_NOT_CONFIGURED") errorText = "AI hali sozlanmagan. Cloudflare Worker Settings → Variables and Secrets ichiga HF_TOKEN Secretini qo‘shing.";
+      else if (error.code === "HF_TOKEN_INVALID") errorText = "Hugging Face tokeni yoki uning ruxsatlari noto‘g‘ri. Cloudflare Secret sozlamasini tekshiring.";
+      else if (error.code === "HF_QUOTA_EXHAUSTED") errorText = "Hugging Face AI krediti tugagan yoki hisob limiti yetgan.";
+      else if (error.code === "HF_MODEL_UNAVAILABLE") errorText = "Tanlangan model mavjud emas yoki undan foydalanishga ruxsat kerak.";
+      else if (error.code === "RATE_LIMITED") errorText = "AI provayderining vaqtinchalik limiti to‘ldi. Keyinroq urinib ko‘ring.";
+      else if (error.code === "UPSTREAM_TIMEOUT") errorText = "AI javobi uzoq ketyapti. Keyinroq urinib ko‘ring.";
       else if (error.code === "UPSTREAM_ERROR") errorText = "AI provayderi hozir javob bermadi. Keyinroq urinib ko‘ring.";
       if (position >= 0) chat.messages[position] = { id:pending.id, role:"assistant", content:"⚠️ " + errorText, createdAt:Date.now(), failed:true };
       setStatus(false, "AI so‘rovida xatolik");
