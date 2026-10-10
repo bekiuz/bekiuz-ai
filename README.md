@@ -20,7 +20,7 @@ Tokenni hech qachon GitHub, frontend JavaScript yoki chatga yozmang.
 
 ## Model va kvota
 
-Standart model: `google/gemma-2-2b-it:fastest`. Uni `wrangler.toml` faylidagi `HF_MODEL` orqali almashtirish mumkin.
+Standart model: `google/gemma-2-2b-it:featherless-ai`. Uni `wrangler.toml` faylidagi `HF_MODEL` orqali almashtirish mumkin.
 
 Hugging Face Free foydalanuvchilar uchun hozir oyiga **$0.10 Inference Providers krediti** beradi; bu miqdor o‘zgarishi mumkin va cheksiz foydalanish emas. Kvota tugasa, ilova foydalanuvchiga xabar beradi. Model mavjudligi va provayder limiti ham o‘zgarishi mumkin.
 
