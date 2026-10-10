@@ -1,7 +1,10 @@
 (function () {
   "use strict";
-  const CHAT_KEY = "bekiuz-ai-chats-v1";
-  const MODE_KEY = "bekiuz-ai-mode-v1";
+  const CHAT_KEY = "zuxrash-ai-chats-v1";
+  const LEGACY_CHAT_KEY = "bekiuz-ai-chats-v1";
+  const CLIENT_KEY = "zuxrash-ai-client-v1";
+  const MODE_KEY = "zuxrash-ai-mode-v1";
+  const LEGACY_MODE_KEY = "bekiuz-ai-mode-v1";
   const state = { chats: [], activeId: null, mode: "general", busy: false, toastTimer: null };
   const $ = (id) => document.getElementById(id);
   const el = {
@@ -25,6 +28,18 @@
   }
   function makeId() {
     return window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+  }
+  function getClientId() {
+    try {
+      let id = localStorage.getItem(CLIENT_KEY);
+      if (!id) {
+        id = makeId();
+        localStorage.setItem(CLIENT_KEY, id);
+      }
+      return id;
+    } catch {
+      return makeId();
+    }
   }
   function current() { return state.chats.find((chat) => chat.id === state.activeId) || null; }
   function save() {
@@ -192,10 +207,10 @@
   }
   function typingNode() {
     const row = document.createElement("article"); row.className = "message-row assistant";
-    const avatar = document.createElement("div"); avatar.className = "message-avatar"; avatar.textContent = "B";
+    const avatar = document.createElement("div"); avatar.className = "message-avatar"; avatar.textContent = "Z";
     const body = document.createElement("div"); body.className = "message-body";
     const meta = document.createElement("div"); meta.className = "message-meta";
-    const name = document.createElement("strong"); name.textContent = "Bekiuz AI";
+    const name = document.createElement("strong"); name.textContent = "Zuxrash AI";
     const time = document.createElement("time"); time.textContent = "Javob yozmoqda…"; meta.append(name, time);
     const content = document.createElement("div"); content.className = "message-content";
     const dots = document.createElement("span"); dots.className = "typing-dots";
@@ -208,7 +223,7 @@
     const avatar = document.createElement("div"); avatar.className = "message-avatar"; avatar.textContent = user ? "S" : "B";
     const body = document.createElement("div"); body.className = "message-body";
     const meta = document.createElement("div"); meta.className = "message-meta";
-    const name = document.createElement("strong"); name.textContent = user ? "Siz" : "Bekiuz AI";
+    const name = document.createElement("strong"); name.textContent = user ? "Siz" : "Zuxrash AI";
     const time = document.createElement("time"); time.textContent = timeLabel(message.createdAt); meta.append(name, time);
     const content = document.createElement("div"); content.className = "message-content";
     renderMarkdown(content, message.content); body.append(meta, content);
@@ -275,7 +290,7 @@
         .slice(-12).map((message) => ({ role:message.role, content:String(message.content).slice(0,12000) }));
       const response = await fetch("/api/chat", {
         method:"POST",
-        headers:{"Content-Type":"application/json", "Accept":"application/json"},
+        headers:{"Content-Type":"application/json", "Accept":"application/json", "X-Zuxrash-Client":getClientId()},
         body:JSON.stringify({ mode:chat.mode, messages })
       });
       const data = await response.json().catch(() => ({}));
@@ -285,11 +300,13 @@
       setStatus(true, "AI javobi olindi");
     } catch (error) {
       const position = chat.messages.findIndex((message) => message.id === pending.id);
-      let errorText = "Cloudflare AI hozir javob bermadi. Birozdan keyin qayta urinib ko‘ring.";
-      if (error.code === "AI_BINDING_NOT_CONFIGURED") errorText = "Cloudflare Workers AI binding ulanmagan. Sozlamani tekshirib deploy qiling.";
-      else if (error.code === "AI_DAILY_LIMIT") errorText = "Cloudflare AI’ning bugungi bepul limiti tugadi. Limit UTC 00:00 da yangilanadi.";
+      let errorText = "Zuxrash AI hozir javob bermadi. Birozdan keyin qayta urinib ko‘ring.";
+      if (error.code === "AI_BINDING_NOT_CONFIGURED") errorText = "Zuxrash AI serveri hali sozlanmagan. Keyinroq qayta urinib ko‘ring.";
+      else if (error.code === "AI_DAILY_LIMIT") errorText = "Bugungi bepul AI limiti tugadi. Limit UTC 00:00 da yangilanadi.";
+      else if (error.code === "RATE_LIMITED") errorText = "Juda tez-tez so‘rov yuborildi. Bir daqiqadan keyin qayta urinib ko‘ring.";
+      else if (error.code === "RATE_LIMIT_UNAVAILABLE") errorText = "Server himoyasini tekshirishda xatolik. Birozdan keyin qayta urinib ko‘ring.";
       else if (error.code === "AI_TIMEOUT") errorText = "AI javobi uzoq ketyapti. Birozdan keyin qayta urinib ko‘ring.";
-      else if (error.code === "AI_MODEL_ERROR") errorText = "Cloudflare AI modeli hozir javob bermadi. Keyinroq yana urinib ko‘ring.";
+      else if (error.code === "AI_MODEL_ERROR") errorText = "Zuxrash AI modeli hozir javob bermadi. Keyinroq yana urinib ko‘ring.";
       if (position >= 0) chat.messages[position] = { id:pending.id, role:"assistant", content:"⚠️ " + errorText, createdAt:Date.now(), failed:true };
       setStatus(false, "AI so‘rovida xatolik");
     } finally {
@@ -297,9 +314,21 @@
     }
   }
   function load() {
-    const saved = safeJson(localStorage.getItem(CHAT_KEY), []);
-    state.chats = Array.isArray(saved) ? saved.filter((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages)).slice(0, 40) : [];
-    state.mode = localStorage.getItem(MODE_KEY) === "business" ? "business" : "general";
+    const currentSaved = safeJson(localStorage.getItem(CHAT_KEY), null);
+    const legacySaved = safeJson(localStorage.getItem(LEGACY_CHAT_KEY), []);
+    const saved = Array.isArray(currentSaved) ? currentSaved : legacySaved;
+    state.chats = Array.isArray(saved)
+      ? saved
+          .filter((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages))
+          .map((chat) => ({
+            ...chat,
+            messages: chat.messages.filter((message) => !(message && message.failed && message.role === "assistant"))
+          }))
+          .filter((chat) => chat.messages.length > 0)
+          .slice(0, 40)
+      : [];
+    const mode = localStorage.getItem(MODE_KEY) || localStorage.getItem(LEGACY_MODE_KEY);
+    state.mode = mode === "business" ? "business" : "general";
     state.chats.sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     state.activeId = state.chats[0]?.id || null;
     setMode(state.mode, false); drawHistory(); drawMessages();

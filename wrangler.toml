@@ -12,3 +12,20 @@ binding = "AI"
 
 [vars]
 AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+
+# Basic protection for the public AI endpoint.
+[[ratelimits]]
+name = "CLIENT_RATE_LIMITER"
+namespace_id = "2026101001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[[ratelimits]]
+name = "NETWORK_RATE_LIMITER"
+namespace_id = "2026101002"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60
