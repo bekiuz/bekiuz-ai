@@ -8,7 +8,7 @@ binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
 [vars]
-HF_MODEL = "google/gemma-2-2b-it:fastest"
+HF_MODEL = "google/gemma-2-2b-it:featherless-ai"
 
 # Maxfiy Hugging Face tokenini bu faylga yozmang.
 # Dashboard: Workers & Pages → bekiuz-ai → Settings → Variables and Secrets
