@@ -2,7 +2,7 @@ const GENERAL_SYSTEM_PROMPT = "You are Bekiuz AI, a helpful multilingual AI assi
 
 const BUSINESS_SYSTEM_PROMPT = "You are Bekiuz Business AI, an assistant for small businesses, designers, freelancers, and teams. Reply in the user's language; prefer natural Uzbek for Uzbek messages. Help create social media captions, ad copy, product descriptions, customer support replies, FAQ drafts, content calendars, project proposals, and simple workflow plans. Never invent business prices, guarantees, testimonials, or facts. If key details are missing, state assumptions or ask one concise question. Keep marketing claims honest and avoid promising guaranteed sales or results.";
 
-const DEFAULT_MODEL = "google/gemma-2-2b-it:featherless-ai";
+const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -27,6 +27,10 @@ function cleanHistory(input) {
     .filter((message) => message.content.length > 0);
 }
 
+function errorText(error) {
+  return String(error?.message || error || "").toLowerCase();
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -39,9 +43,10 @@ export default {
     if (url.pathname === "/api/health" && request.method === "GET") {
       return json({
         ok: true,
-        configured: Boolean(env.HF_TOKEN),
-        provider: "Hugging Face Inference Providers",
-        model: env.HF_MODEL || DEFAULT_MODEL,
+        configured: Boolean(env.AI),
+        provider: "Cloudflare Workers AI",
+        model: env.AI_MODEL || DEFAULT_MODEL,
+        freeDailyAllocationNeurons: 10000,
       });
     }
 
@@ -51,11 +56,11 @@ export default {
     if (request.method !== "POST") {
       return json({ ok: false, error: "Faqat POST so‘rovi qabul qilinadi.", code: "METHOD_NOT_ALLOWED" }, 405);
     }
-    if (!env.HF_TOKEN) {
+    if (!env.AI) {
       return json({
         ok: false,
-        error: "Hugging Face tokeni serverda sozlanmagan.",
-        code: "HF_TOKEN_NOT_CONFIGURED",
+        error: "Cloudflare Workers AI binding ulanmagan.",
+        code: "AI_BINDING_NOT_CONFIGURED",
       }, 503);
     }
 
@@ -77,79 +82,47 @@ export default {
     }
 
     const systemPrompt = mode === "business" ? BUSINESS_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT;
-    const model = typeof env.HF_MODEL === "string" && env.HF_MODEL.trim()
-      ? env.HF_MODEL.trim()
+    const model = typeof env.AI_MODEL === "string" && env.AI_MODEL.trim()
+      ? env.AI_MODEL.trim()
       : DEFAULT_MODEL;
 
     try {
-      const upstream = await fetch("https://router.huggingface.co/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + env.HF_TOKEN,
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "system", content: systemPrompt }, ...messages],
-          temperature: 0.65,
-          max_tokens: 1200,
-          stream: false,
-        }),
-        signal: AbortSignal.timeout(45000),
+      const result = await env.AI.run(model, {
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        temperature: 0.65,
+        max_tokens: 1200,
       });
 
-      const result = await upstream.json().catch(() => ({}));
-      if (!upstream.ok) {
-        if (upstream.status === 401 || upstream.status === 403) {
-          return json({
-            ok: false,
-            error: "Hugging Face tokeni yoki ruxsatlari noto‘g‘ri. Cloudflare Secret sozlamasini tekshiring.",
-            code: "HF_TOKEN_INVALID",
-          }, 502);
-        }
-        if (upstream.status === 402) {
-          return json({
-            ok: false,
-            error: "Hugging Face AI krediti tugagan yoki hisob sozlamasida muammo bor.",
-            code: "HF_QUOTA_EXHAUSTED",
-          }, 429);
-        }
-        if (upstream.status === 429) {
-          return json({
-            ok: false,
-            error: "AI provayderi vaqtinchalik limit qo‘ydi. Birozdan keyin qayta urinib ko‘ring.",
-            code: "RATE_LIMITED",
-          }, 429);
-        }
-        if (upstream.status === 400 || upstream.status === 404 || upstream.status === 422) {
-          return json({
-            ok: false,
-            error: "Tanlangan AI modeli hozir mavjud emas yoki undan foydalanish uchun qo‘shimcha ruxsat talab qilinmoqda.",
-            code: "HF_MODEL_UNAVAILABLE",
-          }, 502);
-        }
-        return json({
-          ok: false,
-          error: "Hugging Face AI xizmati vaqtincha javob bermadi.",
-          code: "UPSTREAM_ERROR",
-        }, 502);
+      const reply = typeof result?.response === "string"
+        ? result.response
+        : result?.choices?.[0]?.message?.content;
+
+      if (typeof reply !== "string" || !reply.trim()) {
+        return json({ ok: false, error: "AI bo‘sh javob qaytardi.", code: "AI_MODEL_ERROR" }, 502);
       }
 
-      const reply = result?.choices?.[0]?.message?.content;
-      if (typeof reply !== "string" || !reply.trim()) {
-        return json({ ok: false, error: "AI bo‘sh javob qaytardi.", code: "UPSTREAM_ERROR" }, 502);
-      }
-      return json({ ok: true, reply: reply.trim(), model: result?.model || model });
+      return json({ ok: true, reply: reply.trim(), model });
     } catch (error) {
-      const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError";
+      const message = errorText(error);
+      if (/neuron|daily limit|quota|exceeded.*limit|too many requests/.test(message)) {
+        return json({
+          ok: false,
+          error: "Cloudflare Workers AI’ning bugungi bepul limiti tugagan. Limit UTC 00:00 da yangilanadi.",
+          code: "AI_DAILY_LIMIT",
+        }, 429);
+      }
+      if (/timeout|timed out|abort/.test(message)) {
+        return json({
+          ok: false,
+          error: "AI javobi uzoq ketyapti. Birozdan keyin qayta urinib ko‘ring.",
+          code: "AI_TIMEOUT",
+        }, 504);
+      }
       return json({
         ok: false,
-        error: timedOut
-          ? "AI javobi uzoq ketyapti. Birozdan keyin qayta urinib ko‘ring."
-          : "AI xizmatiga ulanib bo‘lmadi.",
-        code: timedOut ? "UPSTREAM_TIMEOUT" : "UPSTREAM_ERROR",
-      }, timedOut ? 504 : 502);
+        error: "Cloudflare AI modeli vaqtincha javob bermadi. Model holatini va Workers AI limitini tekshiring.",
+        code: "AI_MODEL_ERROR",
+      }, 502);
     }
   },
 };

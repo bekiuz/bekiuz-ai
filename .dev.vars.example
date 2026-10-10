@@ -1,3 +1,3 @@
-# Nusxasini .dev.vars nomi bilan saqlang.
-# Haqiqiy tokenni GitHub'ga yubormang.
-HF_TOKEN=hf_your_token_here
+# Cloudflare Workers AI binding ishlatiladi.
+# Alohida Hugging Face yoki OpenRouter API tokeni kerak emas.
+# Maxfiy kalitlarni bu faylga kiritmang.

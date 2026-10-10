@@ -7,10 +7,8 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-[vars]
-HF_MODEL = "google/gemma-2-2b-it:featherless-ai"
+[ai]
+binding = "AI"
 
-# Maxfiy Hugging Face tokenini bu faylga yozmang.
-# Dashboard: Workers & Pages → bekiuz-ai → Settings → Variables and Secrets
-# Name: HF_TOKEN | Type: Secret
-# Local development: .dev.vars faylidan foydalaning.
+[vars]
+AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"

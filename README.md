@@ -5,44 +5,47 @@ Bekiuz Company uchun mobilga mos AI chat MVP.
 - **Universal AI** — umumiy savollar, yozish, rejalash va kod bo‘yicha yordam.
 - **Business AI** — marketing matni, ijtimoiy tarmoq kontenti, FAQ, mahsulot tavsifi va biznes jarayonlarini rejalash.
 
-Frontend: HTML/CSS/JavaScript. Backend: Cloudflare Workers. Model API: Hugging Face Inference Providers. Yangi Hugging Face Space shart emas — mavjud Cloudflare Worker sayt va backendni birga xizmat qiladi.
+Frontend: HTML/CSS/JavaScript. Backend va model inference: Cloudflare Workers AI. Alohida Hugging Face yoki OpenRouter API tokeni kerak emas.
 
-## Bir marta sozlash
+## Cloudflare sozlamasi
 
-1. Hugging Face tokenlarini yaratish sahifasini oching: https://huggingface.co/settings/tokens
-2. Fine-grained token yarating va **Make calls to Inference Providers** ruxsatini tanlang.
-3. Cloudflare Dashboard → **Workers & Pages** → **bekiuz-ai** → **Settings** → **Variables and Secrets** → **Add**.
-4. Type: **Secret**, name: `HF_TOKEN`, value: tokeningiz.
-5. **Deploy** tugmasini bosing.
-6. Saytni ochib `/api/health` endpointini tekshiring. `configured: true` bo‘lsa, token serverga ulangan.
+Worker Wrangler binding sozlamasinda Workers AI quyidagicha ulangan:
 
-Tokenni hech qachon GitHub, frontend JavaScript yoki chatga yozmang.
+```toml
+[ai]
+binding = "AI"
 
-## Model va kvota
+[vars]
+AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+```
 
-Standart model: `google/gemma-2-2b-it:featherless-ai`. Uni `wrangler.toml` faylidagi `HF_MODEL` orqali almashtirish mumkin.
+GitHub’dagi `main` branch yangilanganda Cloudflare Build sozlangan bo‘lsa, `npx wrangler deploy` avtomatik bajariladi. Build tugagach, `/api/health` endpointini oching. `configured: true` va `provider: "Cloudflare Workers AI"` chiqishi kerak.
 
-Hugging Face Free foydalanuvchilar uchun hozir oyiga **$0.10 Inference Providers krediti** beradi; bu miqdor o‘zgarishi mumkin va cheksiz foydalanish emas. Kvota tugasa, ilova foydalanuvchiga xabar beradi. Model mavjudligi va provayder limiti ham o‘zgarishi mumkin.
+- Workers AI bindings: https://developers.cloudflare.com/workers-ai/configuration/bindings/
+- Model ma’lumoti va misol: https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/
+- Tarif va bepul limit: https://developers.cloudflare.com/workers-ai/platform/pricing/
 
-- Hugging Face Inference Providers: https://huggingface.co/docs/inference-providers/tasks/chat-completion
-- Tariflar: https://huggingface.co/docs/inference-providers/pricing
-- Cloudflare Worker Secrets: https://developers.cloudflare.com/workers/configuration/secrets/
+## Bepul limit
 
-## Mahalliy test
+Cloudflare Workers AI bepul rejasi kuniga **10,000 Neuron** ajratadi. Limit **00:00 UTC** da yangilanadi. Bu cheksiz foydalanish emas; kunlik limit tugasa, so‘rovlar keyingi resetgacha ishlamasligi mumkin.
 
-1. `.dev.vars.example` faylidan `.dev.vars` nusxa yarating.
-2. `HF_TOKEN` qiymatini mahalliy server uchun kiriting.
+## Mahalliy ishga tushirish
+
+1. Node.js LTS va npm o‘rnating.
+2. Repozitoriyani yuklab oling va terminalni loyiha papkasida oching.
 3. `npm install`
-4. `npm run dev`
+4. `npx wrangler login`
+5. `npm run dev`
 
-Maxfiy `.dev.vars` GitHub'ga yuborilmasligi kerak.
+Workers AI mahalliy `wrangler dev` testlarida ham Cloudflare hisobingiz orqali ishlaydi.
 
-## Hozirgi cheklovlar
+## Maxfiylik va cheklovlar
 
-- Suhbatlar hozircha brauzerning `localStorage` xotirasida saqlanadi; akkaunt va bulutli sinxronlash yo‘q.
+- AI API tokenini frontendga yoki GitHub’ga qo‘yish talab qilinmaydi.
+- Suhbatlar brauzerning `localStorage` xotirasida saqlanadi; bulutli tarix va akkauntlar yo‘q.
+- Xabarlar javob ishlab chiqarish uchun Cloudflare Workers AI’ga uzatiladi; parol yoki boshqa maxfiy ma’lumot yubormang.
 - Veb-qidiruv, rasm tahlili va ovoz funksiyalari hali qo‘shilmagan.
-- Xabarlar AI javobini ishlab chiqarish uchun Hugging Face Inference Providers orqali yuboriladi. Parol yoki maxfiy ma'lumot yubormang.
-- Ommaga keng chiqarishdan oldin autentifikatsiya va so‘rovlar uchun server-side limit qo‘shish ma’qul.
+- Ommaga keng chiqarishdan oldin autentifikatsiya va server-side request limitlari qo‘shilishi tavsiya etiladi.
 
 ## Fayllar
 
@@ -50,4 +53,4 @@ Maxfiy `.dev.vars` GitHub'ga yuborilmasligi kerak.
 - `public/styles.css` — responsive dizayn
 - `public/app.js` — chat, tarix va API chaqiruvi
 - `src/index.js` — Cloudflare Worker backend
-- `wrangler.toml` — deployment sozlamalari
+- `wrangler.toml` — Workers AI binding va deployment sozlamalari
