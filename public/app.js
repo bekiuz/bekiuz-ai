@@ -220,7 +220,7 @@
   function messageNode(message) {
     const user = message.role === "user";
     const row = document.createElement("article"); row.className = "message-row " + (user ? "user" : "assistant");
-    const avatar = document.createElement("div"); avatar.className = "message-avatar"; avatar.textContent = user ? "S" : "B";
+    const avatar = document.createElement("div"); avatar.className = "message-avatar"; avatar.textContent = user ? "S" : "Z";
     const body = document.createElement("div"); body.className = "message-body";
     const meta = document.createElement("div"); meta.className = "message-meta";
     const name = document.createElement("strong"); name.textContent = user ? "Siz" : "Zuxrash AI";
