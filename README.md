@@ -1,52 +1,52 @@
+---
+title: Bekiuz AI
+emoji: "✳"
+colorFrom: purple
+colorTo: pink
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Bekiuz AI — Universal + Business AI
 
-Bekiuz Company uchun mobilga mos AI MVP. Bitta ilovada ikki rejim mavjud:
+Bekiuz AI is a responsive Uzbek-first AI chat app with two modes:
 
-- **Universal AI** — umumiy savollar, yozish, rejalash va kod bo‘yicha yordam.
-- **Business AI** — marketing matni, ijtimoiy tarmoq kontenti, FAQ, mahsulot tavsifi va biznes jarayonlarini rejalash.
+- **Universal AI** — general questions, writing, planning, and coding help.
+- **Business AI** — social posts, product descriptions, FAQs, customer replies, and workflows.
 
-Frontend: HTML/CSS/JavaScript. Backend: Cloudflare Worker. AI: OpenRouter Free Models Router (`openrouter/free`). Build bosqichi talab qilinmaydi.
+## Deployment
 
-## Mahalliy ishga tushirish
+This branch is prepared for a Hugging Face Docker Space and uses the Hugging Face Inference Providers chat-completions API. It does not use OpenRouter.
 
-Talablar: Node.js LTS va npm.
+1. Create a Hugging Face Space and select **Docker** as the SDK.
+2. In the Space's **Settings → Variables and secrets**, add a secret named `HF_TOKEN`. Use a fine-grained Hugging Face token with the **Make calls to Inference Providers** permission.
+3. To sync this branch from GitHub automatically, create these GitHub Actions repository secrets:
+   - `HF_SPACE_REPO`: `your-huggingface-username/your-space-name` (no URL).
+   - `HF_SPACE_WRITE_TOKEN`: a separate fine-grained token with write access only to that Space.
+4. Run the **Sync Bekiuz AI to Hugging Face Space** workflow from the `huggingface-space` branch, or push a new commit to that branch.
+5. Wait for the Space to build, then open its public URL.
 
-1. Repozitoriyani yuklab, terminalni loyiha papkasida oching.
-2. Paketlarni o‘rnating: `npm install`
-3. OpenRouter API key yarating: https://openrouter.ai/keys
-4. `.dev.vars.example` faylidan `.dev.vars` nusxa yarating va `OPENROUTER_API_KEY` qiymatini o‘zingizning kalitingiz bilan almashtiring. Bu fayl Git’ga yuborilmasligi kerak.
-5. `npm run dev` buyrug‘ini bajaring.
-6. Terminal ko‘rsatgan localhost manzilini oching.
+Keep both tokens secret. Never paste them into chat, commit them to GitHub, or put them in frontend JavaScript. The inference token and Space-write token are separate so the running app does not need repository-write permission.
 
-## Cloudflare Workers'ga chiqarish
+## Usage and limits
 
-1. Cloudflare hisobingizga kiring.
-2. Terminalda autentifikatsiya qiling: `npx wrangler login`
-3. API kalitini maxfiy secret sifatida qo‘shing: `npx wrangler secret put OPENROUTER_API_KEY`
-4. So‘ralganda kalitni terminalga kiriting. Uni frontend, `wrangler.toml` yoki GitHub'ga yozmang.
-5. Deploy qiling: `npm run deploy`
-6. `/api/health` endpointini tekshiring.
+Hugging Face currently lists **$0.10/month** in Inference Providers credits for free users; the amount and terms can change. This is a small testing allowance, not unlimited free AI. Once it is exhausted, requests may stop until the next allocation or until credits are added. Check the current [pricing page](https://huggingface.co/docs/inference-providers/pricing).
 
-## Bepul AI va cheklovlar
+The default model is `google/gemma-2-2b-it:fastest`. To use a different supported chat model, add a Space variable named `HF_MODEL` with a model identifier from the current [chat-completion model documentation](https://huggingface.co/docs/inference-providers/tasks/chat-completion).
 
-Standart model `openrouter/free`. U mos bepul modelni tanlaydi. Bepul model mavjudligi, javob tezligi va limitlari o‘zgarishi mumkin. Bu cheksiz foydalanish kafolati emas.
+## Local development
 
-- OpenRouter Free Router: https://openrouter.ai/docs/guides/routing/routers/free-router
-- Cloudflare static assets: https://developers.cloudflare.com/workers/static-assets/
-- Cloudflare Workers secrets: https://developers.cloudflare.com/workers/configuration/secrets/
+Requirements: Node.js 22 or newer.
 
-## Maxfiylik va hozirgi cheklovlar
+1. Copy `.env.example` to `.env`.
+2. Add your own `HF_TOKEN` to `.env`; do not commit that file.
+3. Run `npm run dev` and open the local address printed in the terminal (default port 7860).
+4. Run `npm run check` to verify JavaScript syntax.
 
-- API kaliti faqat serverdagi secretda saqlanishi kerak.
-- Suhbatlar foydalanuvchining brauzeridagi `localStorage`'da saqlanadi; bulutli tarix va akkauntlar hozircha yo‘q.
-- Xabarlar javob olish uchun OpenRouter'ga yuboriladi; sezgir ma'lumot yubormang.
-- Hozircha autentifikatsiya va individual server-side limitlar yo‘q. Ommaga keng chiqarishdan oldin bularni qo‘shish kerak.
-- Bepul router tanlagan modelga qarab javob sifati va uslubi farqlanishi mumkin.
+## Security and limitations
 
-## Fayllar
-
-- `public/index.html` — interfeys
-- `public/styles.css` — responsive dizayn
-- `public/app.js` — chat, tarix va API chaqiruvi
-- `src/index.js` — Cloudflare Worker backend
-- `wrangler.toml` — deployment sozlamalari
+- The Hugging Face token is read only by the server; it is never sent to the browser.
+- Chat history is currently stored in the browser's `localStorage`. There is no cloud sync or user login.
+- Messages sent to the inference endpoint are processed by Hugging Face and the selected inference provider. Do not send passwords or other sensitive information.
+- Web search, image uploads, voice features, and cross-device chat sync are not implemented in this MVP.
