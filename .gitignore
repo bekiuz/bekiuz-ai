@@ -5,3 +5,6 @@ node_modules/
 .env.*
 !.env.example
 .DS_Store
+
+# Netlify local linking state (do not commit)
+.netlify
