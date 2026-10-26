@@ -6,7 +6,7 @@
   const $ = (id) => document.getElementById(id);
   const el = {
     sidebar:$("sidebar"), newChatBtn:$("newChatBtn"), chatList:$("chatList"),
-    statusDot:$("statusDot"), statusText:$("statusText"), clearChatBtn:$("clearChatBtn"),
+    statusDot:$("statusDot"), statusText:$("statusText"), clearChatBtn:$("clearChatBtn"), exportChatBtn:$("exportChatBtn"),
     mobileMenuBtn:$("mobileMenuBtn"), mobileOverlay:$("mobileOverlay"), welcome:$("welcome"),
     welcomeTitle:$("welcomeTitle"), welcomeText:$("welcomeText"), suggestionGrid:$("suggestionGrid"),
     messages:$("messages"), chatArea:$("chatArea"), chatForm:$("chatForm"),
@@ -296,6 +296,44 @@
       state.busy = false; chat.updatedAt = Date.now(); save(); setBusy(false); drawHistory(); drawMessages(); el.messageInput.focus();
     }
   }
+  function exportCurrentChat() {
+    const chat = current();
+    const messages = chat && Array.isArray(chat.messages)
+      ? chat.messages.filter((message) => !message.pending && ["user", "assistant"].includes(message.role) && String(message.content || "").trim())
+      : [];
+    if (!messages.length) return toast("Eksport qilish uchun suhbatda xabar bo‘lishi kerak.");
+
+    const modeLabel = chat.mode === "business" ? "Business AI" : "Universal AI";
+    const exportedAt = new Intl.DateTimeFormat("uz-UZ", { dateStyle:"medium", timeStyle:"short" }).format(new Date());
+    const lines = [
+      "Bekiuz AI — " + (chat.title || "Suhbat"),
+      "Rejim: " + modeLabel,
+      "Eksport qilingan vaqt: " + exportedAt,
+      "",
+      ...messages.flatMap((message) => [
+        (message.role === "user" ? "Siz" : "Bekiuz AI") + " · " + timeLabel(message.createdAt),
+        String(message.content || ""),
+        ""
+      ])
+    ];
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type:"text/plain;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const safeTitle = String(chat.title || "suhbat").toLowerCase()
+      .replace(/\\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40) || "suhbat";
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = "bekiuz-ai-" + safeTitle + "-" + new Date().toISOString().slice(0, 10) + ".txt";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    toast("Suhbat TXT fayl sifatida saqlandi.");
+  }
+
   function load() {
     const saved = safeJson(localStorage.getItem(CHAT_KEY), []);
     state.chats = Array.isArray(saved) ? saved.filter((chat) => chat && typeof chat.id === "string" && Array.isArray(chat.messages)).slice(0, 40) : [];
@@ -305,6 +343,7 @@
     setMode(state.mode, false); drawHistory(); drawMessages();
   }
 
+  el.exportChatBtn.addEventListener("click", exportCurrentChat);
   el.newChatBtn.addEventListener("click", newChat);
   el.clearChatBtn.addEventListener("click", () => {
     const chat = current();
