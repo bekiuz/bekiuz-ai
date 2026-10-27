@@ -1,0 +1,58 @@
+name: Deploy Bekiuz AI Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "wrangler.toml"
+      - "package.json"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check deployment credentials
+        id: credentials
+        shell: bash
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Worker deploy skipped. Add repository Actions secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to enable automatic deployment."
+          fi
+
+      - name: Check out source
+        if: steps.credentials.outputs.available == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: steps.credentials.outputs.available == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        if: steps.credentials.outputs.available == 'true'
+        run: npm install
+
+      - name: Check JavaScript syntax
+        if: steps.credentials.outputs.available == 'true'
+        run: npm run check
+
+      - name: Deploy Worker
+        if: steps.credentials.outputs.available == 'true'
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
