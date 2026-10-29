@@ -58,52 +58,113 @@ function plannerProject(input = {}) {
     const candidate = typeof value === "number" ? value : Number(value);
     return Number.isFinite(candidate) ? Math.min(max, Math.max(min, candidate)) : fallback;
   };
-  const plotWidth = number(input.plotWidth, 20, 6, 100);
-  const plotLength = number(input.plotLength, 30, 8, 200);
+  const houseWidth = number(input.houseWidth, 7, 3, 30);
+  const houseLength = number(input.houseLength, 5, 3, 40);
   return {
-    plotWidth,
-    plotLength,
-    houseWidth: number(input.houseWidth, 10, 4, Math.max(4, Math.min(30, plotWidth - 2))),
-    houseLength: number(input.houseLength, 14, 4, Math.max(4, Math.min(40, plotLength - 2))),
-    floors: Math.round(number(input.floors, 1, 1, 2)),
-    rooms: Math.round(number(input.rooms, 3, 2, 5)),
+    houseWidth,
+    houseLength,
+    slabThicknessCm: number(input.slabThicknessCm, 30, 8, 60),
+    wallHeight: number(input.wallHeight, 2.8, 2, 5),
+    wallThicknessCm: number(input.wallThicknessCm, 25, 10, 60),
+    floors: Math.round(number(input.floors, 1, 1, 3)),
+    rooms: Math.round(number(input.rooms, 3, 2, 8)),
+    doorCount: Math.round(number(input.doorCount, 1, 1, 8)),
+    windowCount: Math.round(number(input.windowCount, 4, 0, 20)),
     roofType: ["gable", "hip", "flat"].includes(input.roofType) ? input.roofType : "gable",
+    roofCover: input.roofCover === "profnastil" ? "profnastil" : "shifer",
   };
+}
+
+function fallbackRoomLayout(count) {
+  const names = ["Mehmonxona", "Oshxona", "Yotoqxona", "Yotoqxona 2", "Sanuzel", "Dahliz", "Ish xonasi", "Ombor"];
+  const n = Math.max(2, Math.min(8, Math.round(count || 3)));
+  if (n === 2) {
+    return [
+      { name: names[0], x: 0, y: 0, width: 0.5, length: 1 },
+      { name: names[2], x: 0.5, y: 0, width: 0.5, length: 1 },
+    ];
+  }
+  if (n === 3) {
+    return [
+      { name: names[0], x: 0, y: 0, width: 0.5, length: 0.52 },
+      { name: names[1], x: 0.5, y: 0, width: 0.5, length: 0.52 },
+      { name: names[2], x: 0, y: 0.52, width: 1, length: 0.48 },
+    ];
+  }
+  if (n === 4) {
+    return [
+      { name: names[0], x: 0, y: 0, width: 0.5, length: 0.5 },
+      { name: names[1], x: 0.5, y: 0, width: 0.5, length: 0.5 },
+      { name: names[2], x: 0, y: 0.5, width: 0.5, length: 0.5 },
+      { name: names[3], x: 0.5, y: 0.5, width: 0.5, length: 0.5 },
+    ];
+  }
+  if (n === 5) {
+    return [
+      { name: names[0], x: 0, y: 0, width: 1 / 3, length: 0.5 },
+      { name: names[1], x: 1 / 3, y: 0, width: 1 / 3, length: 0.5 },
+      { name: names[2], x: 2 / 3, y: 0, width: 1 / 3, length: 0.5 },
+      { name: names[3], x: 0, y: 0.5, width: 0.5, length: 0.5 },
+      { name: names[4], x: 0.5, y: 0.5, width: 0.5, length: 0.5 },
+    ];
+  }
+  const columns = n <= 6 ? 3 : 4;
+  const rows = Math.ceil(n / columns);
+  return Array.from({ length: n }, (_, index) => {
+    const row = Math.floor(index / columns);
+    const col = index % columns;
+    return {
+      name: names[index] || ("Xona " + (index + 1)),
+      x: col / columns,
+      y: row / rows,
+      width: 1 / columns,
+      length: 1 / rows,
+    };
+  });
+}
+
+function normaliseRoomLayout(input, project) {
+  const fallback = () => fallbackRoomLayout(project.rooms);
+  if (!Array.isArray(input) || input.length !== project.rooms) return fallback();
+  const rooms = input.map((item, index) => {
+    if (!item || typeof item !== "object") return null;
+    const values = [item.x, item.y, item.width, item.length].map(Number);
+    if (!values.every(Number.isFinite)) return null;
+    const [x, y, width, length] = values;
+    const name = typeof item.name === "string" ? item.name.trim().slice(0, 36) : "";
+    if (!name || x < 0 || y < 0 || width < 0.12 || length < 0.12 || x + width > 1.001 || y + length > 1.001) return null;
+    return { name, x, y, width, length };
+  });
+  if (rooms.some((room) => !room)) return fallback();
+  for (let i = 0; i < rooms.length; i += 1) {
+    for (let j = i + 1; j < rooms.length; j += 1) {
+      const a = rooms[i], b = rooms[j];
+      const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const overlapY = Math.min(a.y + a.length, b.y + b.length) - Math.max(a.y, b.y);
+      if (overlapX > 0.025 && overlapY > 0.025) return fallback();
+    }
+  }
+  const covered = rooms.reduce((total, room) => total + room.width * room.length, 0);
+  if (covered < 0.72 || covered > 1.05) return fallback();
+  return rooms;
 }
 
 function normalisePlannerResult(value, project) {
   if (!value || typeof value !== "object") throw new Error("AI javobi JSON ko‘rinishida emas.");
-  const settings = value.proposedSettings && typeof value.proposedSettings === "object" ? value.proposedSettings : {};
-  const number = (candidate, fallback, min, max) => {
-    const n = typeof candidate === "number" ? candidate : Number(candidate);
-    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
-  };
-  const maxWidth = Math.max(4, Math.min(30, project.plotWidth - 2));
-  const maxLength = Math.max(4, Math.min(40, project.plotLength - 2));
-  let houseWidth = number(settings.houseWidth, project.houseWidth, 4, maxWidth);
-  let houseLength = number(settings.houseLength, project.houseLength, 4, maxLength);
-  const maxFootprint = project.plotWidth * project.plotLength * 0.8;
-  if (houseWidth * houseLength > maxFootprint) {
-    const scale = Math.sqrt(maxFootprint / (houseWidth * houseLength));
-    houseWidth = Math.max(4, houseWidth * scale);
-    houseLength = Math.max(4, houseLength * scale);
-  }
-  const roofType = ["gable", "hip", "flat"].includes(settings.roofType) ? settings.roofType : project.roofType;
   const recommendations = Array.isArray(value.recommendations)
-    ? value.recommendations.filter((item) => typeof item === "string").map((item) => item.trim().slice(0, 220)).filter(Boolean).slice(0, 5)
+    ? value.recommendations
+        .filter((item) => typeof item === "string")
+        .map((item) => item.trim().slice(0, 220))
+        .filter(Boolean)
+        .slice(0, 5)
     : [];
   return {
     summary: typeof value.summary === "string" && value.summary.trim()
       ? value.summary.trim().slice(0, 600)
       : "Uy uchun boshlang‘ich konsept tayyorlandi.",
     recommendations,
-    proposedSettings: {
-      houseWidth: Math.round(houseWidth * 10) / 10,
-      houseLength: Math.round(houseLength * 10) / 10,
-      floors: Math.round(number(settings.floors, project.floors, 1, 2)),
-      rooms: Math.round(number(settings.rooms, project.rooms, 2, 5)),
-      roofType,
-    },
+    rooms: normaliseRoomLayout(value.rooms, project),
+    proposedSettings: project,
   };
 }
 
@@ -181,15 +242,16 @@ export default {
       if (prompt.length > 1200) return respond({ ok: false, error: "So‘rov 1200 belgidan oshmasligi kerak.", code: "PROMPT_TOO_LONG" }, 400);
       const project = plannerProject(body?.project || {});
       const userPrompt = [
-        "BEKIUZ BUILD foydalanuvchisiga uy rejalashtirish bo‘yicha konseptual tavsiya tayyorla.",
-        "Faqat JSON qaytar. Markdown, izoh yoki code fence yozma.",
-        "JSON shakli: {summary: string, recommendations: string[], proposedSettings: {houseWidth: number, houseLength: number, floors: number, rooms: number, roofType: 'gable'|'hip'|'flat}}.",
-        "Javobni tabiiy o‘zbek tilida yoz.",
-        "Bu faqat konsept. Poydevor, armatura, kolonna, to‘sin, elektr sim kesimi yoki quvur diametri kabi xavfsizlikka oid yakuniy yechimlarni belgilama; mutaxassis tekshiruvini eslat.",
-        "Narxlar bazasi berilmagan, shuning uchun aniq qurilish narxi yoki smeta jami sonini o‘ylab topma.",
-        "Uy eni va uzunligi yer maydoniga mos bo‘lsin, imkon qadar yer chegarasidan masofa qoldir.",
-        "Qavatlar 1 yoki 2; xonalar 2 dan 5 gacha; roofType gable, hip yoki flat bo‘lishi kerak.",
-        "Joriy parametrlar: " + JSON.stringify(project),
+        "BEKIUZ BUILD foydalanuvchisi uchun konseptual uy qavat rejasini chiz.",
+        "Faqat valid JSON qaytar, Markdown yoki code fence ishlatma.",
+        "Majburiy JSON: {summary: string, recommendations: string[], rooms: [{name: string, x: number, y: number, width: number, length: number}]}",
+        "rooms massivida aynan " + project.rooms + " ta xona bo‘lsin.",
+        "Xona geometriyasi metrda emas, 0 dan 1 gacha bo‘lgan ulushlarda beriladi. x va y chap-yuqori burchak, width va length xona eni va bo‘yi ulushi. Masalan butun reja ichidagi chap yarmi x=0,y=0,width=0.5,length=1.",
+        "Har bir xona to‘rtburchak bo‘lsin, uy chegarasidan chiqmasin va boshqa xona bilan ustma-ust tushmasin. Xonalar maydonning deyarli hammasini qoplasin.",
+        "Javobni tabiiy o‘zbek tilida yoz; xona nomlarini qisqa qo‘y. Foydalanuvchining o‘lchamlarini o‘zgartirma.",
+        "Bu konseptual chizma. Poydevor, beton armaturasi, ustun/to‘sin o‘lchami, elektr simi yoki quvur diametri kabi xavfsizlikka oid yakuniy yechimlarni belgilama. Malakali mutaxassis tekshirishi kerakligini tavsiya qil.",
+        "Beton/g‘isht/tom material miqdori serverdagi ko‘rsatilgan farazlar bilan hisoblanadi; aniq narxni o‘ylab topma.",
+        "Loyiha parametrlari: " + JSON.stringify(project),
         "Foydalanuvchi talabi: " + prompt,
       ].join("\n\n");
 
