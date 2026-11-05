@@ -8,6 +8,7 @@ const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const PLANNER_ALLOWED_ORIGINS = new Set([
   "https://bekiuz.github.io",
   "https://bekiuz-build.netlify.app",
+  "https://odiy-ai.netlify.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:4173",
@@ -291,11 +292,23 @@ export default {
     if (url.pathname !== "/api/chat") {
       return json({ ok: false, error: "API endpoint topilmadi.", code: "NOT_FOUND" }, 404);
     }
+
+    const chatOrigin = request.headers.get("origin");
+    if (request.method === "OPTIONS") {
+      if (chatOrigin && !PLANNER_ALLOWED_ORIGINS.has(chatOrigin)) {
+        return new Response(null, { status: 403, headers: { "Vary": "Origin" } });
+      }
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
+    }
+    const respondChat = (data, status = 200) => json(data, status, corsHeaders(request));
+    if (chatOrigin && !PLANNER_ALLOWED_ORIGINS.has(chatOrigin)) {
+      return respondChat({ ok: false, error: "Bu manbadan so‘rov qabul qilinmaydi.", code: "ORIGIN_NOT_ALLOWED" }, 403);
+    }
     if (request.method !== "POST") {
-      return json({ ok: false, error: "Faqat POST so‘rovi qabul qilinadi.", code: "METHOD_NOT_ALLOWED" }, 405);
+      return respondChat({ ok: false, error: "Faqat POST so‘rovi qabul qilinadi.", code: "METHOD_NOT_ALLOWED" }, 405);
     }
     if (!env.AI) {
-      return json({
+      return respondChat({
         ok: false,
         error: "Cloudflare Workers AI binding ulanmagan.",
         code: "AI_BINDING_NOT_CONFIGURED",
@@ -306,17 +319,17 @@ export default {
     try {
       const contentLength = Number(request.headers.get("content-length") || 0);
       if (contentLength > 80000) {
-        return json({ ok: false, error: "So‘rov hajmi juda katta.", code: "REQUEST_TOO_LARGE" }, 413);
+        return respondChat({ ok: false, error: "So‘rov hajmi juda katta.", code: "REQUEST_TOO_LARGE" }, 413);
       }
       body = await request.json();
     } catch {
-      return json({ ok: false, error: "So‘rov JSON formatida emas.", code: "INVALID_JSON" }, 400);
+      return respondChat({ ok: false, error: "So‘rov JSON formatida emas.", code: "INVALID_JSON" }, 400);
     }
 
     const mode = ["business", "odiy"].includes(body?.mode) ? body.mode : "general";
     const messages = cleanHistory(body?.messages);
     if (!messages.length || messages[messages.length - 1].role !== "user") {
-      return json({ ok: false, error: "Yuboriladigan xabar topilmadi.", code: "INVALID_MESSAGES" }, 400);
+      return respondChat({ ok: false, error: "Yuboriladigan xabar topilmadi.", code: "INVALID_MESSAGES" }, 400);
     }
 
     const systemPrompt = mode === "business"
@@ -340,21 +353,21 @@ export default {
         : result?.choices?.[0]?.message?.content;
 
       if (typeof reply !== "string" || !reply.trim()) {
-        return json({ ok: false, error: "AI bo‘sh javob qaytardi.", code: "AI_MODEL_ERROR" }, 502);
+        return respondChat({ ok: false, error: "AI bo‘sh javob qaytardi.", code: "AI_MODEL_ERROR" }, 502);
       }
 
-      return json({ ok: true, reply: reply.trim(), model });
+      return respondChat({ ok: true, reply: reply.trim(), model });
     } catch (error) {
       const message = errorText(error);
       if (/neuron|daily limit|quota|exceeded.*limit|too many requests/.test(message)) {
-        return json({
+        return respondChat({
           ok: false,
           error: "Cloudflare Workers AI’ning bugungi bepul limiti tugagan. Limit UTC 00:00 da yangilanadi.",
           code: "AI_DAILY_LIMIT",
         }, 429);
       }
       if (/timeout|timed out|abort/.test(message)) {
-        return json({
+        return respondChat({
           ok: false,
           error: "AI javobi uzoq ketyapti. Birozdan keyin qayta urinib ko‘ring.",
           code: "AI_TIMEOUT",
