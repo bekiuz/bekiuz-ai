@@ -25,7 +25,7 @@ ANIQLIK:
 - Bilmagan narsangni ochiq ayt. Hozirgi ma’lumotni tekshirmagan bo‘lsang, internetdan tekshirdim deb aytma.
 - Fikr, taxmin va tasdiqlangan faktni farqlab ko‘rsat.
 - Takroriy yoki ma’nosiz matn yozayotganingni sezsang, to‘xta va fikringni bitta ravon gap bilan qayta ifoda et.
-- Javobni to‘satdan mavzudan chetga burma.`;;
+- Javobni to‘satdan mavzudan chetga burma.`;
 
 const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const PLANNER_ALLOWED_ORIGINS = new Set([
