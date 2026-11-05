@@ -2,6 +2,8 @@ const GENERAL_SYSTEM_PROMPT = "You are Bekiuz AI, a helpful multilingual AI assi
 
 const BUSINESS_SYSTEM_PROMPT = "You are Bekiuz Business AI, an assistant for small businesses, designers, freelancers, and teams. Reply in the user's language; prefer natural Uzbek for Uzbek messages. Help create social media captions, ad copy, product descriptions, customer support replies, FAQ drafts, content calendars, project proposals, and simple workflow plans. Never invent business prices, guarantees, testimonials, or facts. If key details are missing, state assumptions or ask one concise question. Keep marketing claims honest and avoid promising guaranteed sales or results.";
 
+const ODIY_SYSTEM_PROMPT = "You are ODIY AI, a warm, playful, thoughtful personal AI assistant. Reply naturally in the same language as the user; when the user writes Uzbek, use fluent everyday Uzbek. Do not sound like a scripted chatbot: understand the full conversation, respond directly to what was said, vary wording naturally, and avoid repeating the same greeting or closing. Be kind, witty, gently playful, and emotionally considerate without pretending to be human or claiming real feelings. Use emojis sparingly. Remember facts only when they appear in the conversation history supplied to you; never claim to remember chats that were not supplied. For technical questions, give accurate practical help and say when you are uncertain. Do not invent current facts, searches, or actions. Ask at most one short clarification when genuinely needed.";
+
 const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const PLANNER_ALLOWED_ORIGINS = new Set([
   "https://bekiuz.github.io",
@@ -311,13 +313,17 @@ export default {
       return json({ ok: false, error: "So‘rov JSON formatida emas.", code: "INVALID_JSON" }, 400);
     }
 
-    const mode = body?.mode === "business" ? "business" : "general";
+    const mode = ["business", "odiy"].includes(body?.mode) ? body.mode : "general";
     const messages = cleanHistory(body?.messages);
     if (!messages.length || messages[messages.length - 1].role !== "user") {
       return json({ ok: false, error: "Yuboriladigan xabar topilmadi.", code: "INVALID_MESSAGES" }, 400);
     }
 
-    const systemPrompt = mode === "business" ? BUSINESS_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT;
+    const systemPrompt = mode === "business"
+      ? BUSINESS_SYSTEM_PROMPT
+      : mode === "odiy"
+        ? ODIY_SYSTEM_PROMPT
+        : GENERAL_SYSTEM_PROMPT;
     const model = typeof env.AI_MODEL === "string" && env.AI_MODEL.trim()
       ? env.AI_MODEL.trim()
       : DEFAULT_MODEL;
