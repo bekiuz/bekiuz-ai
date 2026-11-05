@@ -373,7 +373,7 @@ export default {
           code: "AI_TIMEOUT",
         }, 504);
       }
-      return json({
+      return respondChat({
         ok: false,
         error: "Cloudflare AI modeli vaqtincha javob bermadi. Model holatini va Workers AI limitini tekshiring.",
         code: "AI_MODEL_ERROR",
